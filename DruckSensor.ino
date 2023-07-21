@@ -195,7 +195,7 @@ int ADCNull = 0; // normaler Luftdruck 14,696 PSI
 int ADCMaximal = 0;
 double ADCDelta = 1.0; // der Wert von ADCDelta = ADCMaximal-ADCNull entspricht 100%
 unsigned long SecondsBetweenOnOff = 0;
-int LastOnOff = 0;
+unsigned long LastMillis = 0;
 
 // Pumpe ON/OFF
 int PotiProzent=0;
@@ -326,6 +326,7 @@ void setupLCD() {
 void setupRELAIS() {
   pinMode(RELAIS,OUTPUT);
   pumpeState=0;
+  SecondsBetweenOnOff=atoi(SECONDSBETWEEN_ONOFF);
   setPumpe(pumpeState);
 }
 
@@ -498,6 +499,12 @@ void loop() {
   int getPoti=analogRead(POTI);
   int getValue=analogRead(PRESSURE);
   PotiProzent = (int)((float)getPoti*100.0/4095.0);
+  if (LastMillis=0) {
+    LastMillis=millis();
+  } else {
+    LastMillis=millis()-LastMillis;
+  }
+  Serial.printf("%ld %d\n",LastMillis/1000,SecondsBetweenOnOff);
 
   //Serial.printf("Poti=%d%% Pressure=%d\n",PotiProzent,getValue);
 
