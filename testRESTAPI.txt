@@ -1,0 +1,18 @@
+set myIP=10.80.0.158
+
+curl -i -X GET http://%myIP%/
+
+curl -i -X GET http://%myIP%/pumpe
+
+curl -i -X GET http://%myIP%/get-message?message=HelloServer
+
+curl -i -X GET http://%myIP%/pumpe?value=1
+
+curl -i -d '{"type":"pumpe","value":0,"unit":"Toggle"}'  -H "Content-Type: application/json"  -X POST http://%myIP%/pumpe
+
+curl -i -d '{"type":"pumpe","value":0,"unit":"Toggle"}'  -H "Content-Type: application/json"  -X POST http://%myIP%/pumpe
+
+curl --help all
+
+!!!!!
+-d "{\"name\":\"Spring Forever\",\"author\":\"pivotal\"}"
