@@ -182,6 +182,17 @@ byte charMAX[] = {
   B10001
   };
 const byte MAXCHAR=byte(2);
+byte charDELTA[] = {
+  B00000,
+  B00000,
+  B00100,
+  B01010,
+  B01010,
+  B11111,
+  B00000,
+  B00000
+  };
+const byte DELTACHAR=byte(3);
 
 /*PUSHBUTTON*/
 const int PUSHBUTTON = 35;
@@ -195,7 +206,12 @@ int ADCNull = 0; // normaler Luftdruck 14,696 PSI
 int ADCMaximal = 0;
 double ADCDelta = 1.0; // der Wert von ADCDelta = ADCMaximal-ADCNull entspricht 100%
 unsigned long SecondsBetweenOnOff = 0;
+unsigned long cMillis = 0;
 unsigned long LastMillis = 0;
+unsigned long LastOnOff=0;
+int getPoti=0;
+int getValue=0;
+
 
 // Pumpe ON/OFF
 int PotiProzent=0;
@@ -225,6 +241,14 @@ void lcdLine(int idx,char *out) {
 }
 
 void setPumpe(bool state) {
+    Serial.printf("%ld %ld\n",cMillis/1000,LastOnOff/1000);
+    if(SecondsBetweenOnOff*1000>cMillis-LastOnOff) {
+      Serial.println("wait");
+      return;
+    } else { 
+      Serial.println("toogle");
+      LastOnOff = cMillis;
+    }
     pumpeState=state;
     getPumpe();
     if(pumpeState) {
@@ -244,9 +268,8 @@ void setPumpe(bool state) {
         ESP.restart();
       }
     }
-    delay(1000);
-    Serial.printf("%d\n",pumpeState);
-
+    //delay(1000);
+    //Serial.printf("%d\n",pumpeState);
 }
 
 void printLocalTime() {
@@ -321,6 +344,7 @@ void setupLCD() {
   lcd.backlight();
   lcd.createChar(MINCHAR,charMIN);
   lcd.createChar(MAXCHAR,charMAX);
+  lcd.createChar(DELTACHAR,charDELTA);
 }
 
 void setupRELAIS() {
@@ -496,22 +520,19 @@ void setup() {
   }
 
 void loop() {
-  int getPoti=analogRead(POTI);
-  int getValue=analogRead(PRESSURE);
+  getPoti = analogRead(POTI);
+  getValue = analogRead(PRESSURE);
+  cMillis = millis();
   PotiProzent = (int)((float)getPoti*100.0/4095.0);
-  if (LastMillis=0) {
+  /*if (LastMillis=0) {
     LastMillis=millis();
   } else {
     LastMillis=millis()-LastMillis;
-  }
-  Serial.printf("%ld %d\n",LastMillis/1000,SecondsBetweenOnOff);
-
-  //Serial.printf("Poti=%d%% Pressure=%d\n",PotiProzent,getValue);
-
+  }*/
   ESPAsync_WiFiManager->run();
   check_status();
 
-  if(analogRead(PUSHBUTTON)!=0) { 
+  if(analogRead(PUSHBUTTON)!=0) {
     setPumpe(!pumpeState);
     }
   
@@ -532,7 +553,7 @@ void loop() {
           }
         }
         sprintf(lines[LINE1],"V%04d %04d  ",(int)ADCDelta,(cPressure-ADCNull));
-        lines[LINE1][0]=MAXCHAR;
+        lines[LINE1][0]=DELTACHAR;
         if (ADCDelta>0) {
           if((((cPressure-ADCNull)*100)/ADCDelta)<PotiProzent) {
             sprintf(lines[LINE3],"P:ON %d%% on<%d%%                  ",(int)(((cPressure-ADCNull)*100)/ADCDelta),PotiProzent);
