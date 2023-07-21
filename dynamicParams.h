@@ -56,6 +56,9 @@ char NTP_Server  [MAX_NTP_SERVER_LEN + 1]   = "de.pool.ntp.org";
 #define MAX_TIMEZONE_LEN        34
 char TIMEZONE [MAX_TIMEZONE_LEN+1] = "CET-1CEST,M3.5.0,M10.5.0/3";
 
+#define MAX_SECONDSBETWEEN_ONOFF_LEN        3
+char SECONDSBETWEEN_ONOFF [MAX_SECONDSBETWEEN_ONOFF_LEN] = "1";
+
 MenuItem myMenuItems [] =
 {
 /*  
@@ -68,6 +71,7 @@ MenuItem myMenuItems [] =
   { "mqt", "MQTT Server",   MQTT_Server,    MAX_MQTT_SERVER_LEN },
   // https://github.com/nayarsystems/posix_tz_db
   { "tz", "TimeZone" ,TIMEZONE, MAX_TIMEZONE_LEN },
+  { "minsec", "Sec ON/OFF", SECONDSBETWEEN_ONOFF, MAX_SECONDSBETWEEN_ONOFF_LEN },
 };
 
 uint16_t NUM_MENU_ITEMS = sizeof(myMenuItems) / sizeof(MenuItem);  //MenuItemSize;
