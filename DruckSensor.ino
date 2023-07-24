@@ -240,34 +240,51 @@ void lcdLine(int idx,char *out) {
   len=lcd.printf("%s",out);
 }
 
-void setPumpe(bool state) {
-    Serial.printf("%ld %ld\n",cMillis/1000,LastOnOff/1000);
-    if(SecondsBetweenOnOff*1000>cMillis-LastOnOff) {
-      Serial.println("wait");
-      return;
-    } else { 
-      Serial.println("toogle");
-      LastOnOff = cMillis;
-    }
-    pumpeState=state;
-    getPumpe();
-    if(pumpeState) {
-      sprintf(lines[LINE2],"Pumpe: An                    ");
-      digitalWrite(RELAIS,HIGH);
-      lcd.backlight();
-    } else {
-      sprintf(lines[LINE2],"Pumpe: Aus                    ");
-      digitalWrite(RELAIS,LOW);
-      lcd.noBacklight();
-      ADCMaximal=0;
-      ADCNull=0;
-      if(PotiProzent==17) {
-        ESPAsync_WiFiManager->clearConfigData();
-        sprintf(lines[LINE0],"WLAN: ->192.168.4.1                    ");
-        delay(500);
-        ESP.restart();
+void setRelais() {
+  Serial.printf("%ld %ld\n",cMillis/1000,LastOnOff/1000);
+  if(SecondsBetweenOnOff*1000>cMillis-LastOnOff) {
+    Serial.println("wait");
+    return;
+  } else { 
+    Serial.println("toogle");
+    LastOnOff = cMillis;
+  }
+  //if(getValue>ADCNull) {
+  //  if(cPressure!=getValue) {
+  //    cPressure=getValue;
+      if (ADCDelta>0) {
+        if((((cPressure-ADCNull)*100)/ADCDelta)<PotiProzent) {
+          digitalWrite(RELAIS,HIGH);
+        } else {
+          digitalWrite(RELAIS,LOW);
+        }
       }
+  //  }
+  //}
+}
+
+void setPumpe(bool state) {
+  // LastOnOff aktualisieren damit Relais Wait nicht zieht ;-)
+  LastOnOff = cMillis;
+  pumpeState=state;
+  getPumpe();
+  if(pumpeState) {
+    sprintf(lines[LINE2],"Pumpe: An                    ");
+    digitalWrite(RELAIS,HIGH);
+    lcd.backlight();
+  } else {
+    sprintf(lines[LINE2],"Pumpe: Aus                    ");
+    digitalWrite(RELAIS,LOW);
+    lcd.noBacklight();
+    ADCMaximal=0;
+    ADCNull=0;
+    if(PotiProzent==17) {
+      ESPAsync_WiFiManager->clearConfigData();
+      sprintf(lines[LINE0],"WLAN: ->192.168.4.1                    ");
+      delay(500);
+      ESP.restart();
     }
+  }
     //delay(1000);
     //Serial.printf("%d\n",pumpeState);
 }
@@ -557,11 +574,12 @@ void loop() {
         if (ADCDelta>0) {
           if((((cPressure-ADCNull)*100)/ADCDelta)<PotiProzent) {
             sprintf(lines[LINE3],"P:ON %d%% on<%d%%                  ",(int)(((cPressure-ADCNull)*100)/ADCDelta),PotiProzent);
-            digitalWrite(RELAIS,HIGH);
+            //digitalWrite(RELAIS,HIGH);
           } else {
             sprintf(lines[LINE3],"P:OFF %d%% on<%d%%                 ",(int)(((cPressure-ADCNull)*100)/ADCDelta),PotiProzent);
-            digitalWrite(RELAIS,LOW);
+            //digitalWrite(RELAIS,LOW);
           }
+          setRelais();
         }
       }
     }
