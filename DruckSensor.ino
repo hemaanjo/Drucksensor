@@ -207,7 +207,6 @@ int ADCMaximal = 0;
 double ADCDelta = 1.0; // der Wert von ADCDelta = ADCMaximal-ADCNull entspricht 100%
 unsigned long SecondsBetweenOnOff = 0;
 unsigned long cMillis = 0;
-unsigned long LastMillis = 0;
 unsigned long LastOnOff=0;
 int getPoti=0;
 int getValue=0;
@@ -241,12 +240,12 @@ void lcdLine(int idx,char *out) {
 }
 
 void setRelais() {
-  Serial.printf("%ld %ld\n",cMillis/1000,LastOnOff/1000);
   if(SecondsBetweenOnOff*1000>cMillis-LastOnOff) {
+    Serial.printf("%ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
     Serial.println("wait");
     return;
   } else { 
-    Serial.println("toogle");
+    Serial.printf("toogle %ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
     LastOnOff = cMillis;
   }
   //if(getValue>ADCNull) {
@@ -285,7 +284,7 @@ void setPumpe(bool state) {
       ESP.restart();
     }
   }
-    //delay(1000);
+  delay(1000);
     //Serial.printf("%d\n",pumpeState);
 }
 
@@ -541,11 +540,7 @@ void loop() {
   getValue = analogRead(PRESSURE);
   cMillis = millis();
   PotiProzent = (int)((float)getPoti*100.0/4095.0);
-  /*if (LastMillis=0) {
-    LastMillis=millis();
-  } else {
-    LastMillis=millis()-LastMillis;
-  }*/
+  
   ESPAsync_WiFiManager->run();
   check_status();
 
