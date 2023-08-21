@@ -92,10 +92,10 @@ void setup_routing() {
 
   server.on("/get-message", HTTP_GET, [](AsyncWebServerRequest *request) {
     StaticJsonDocument<100> data;
-    if (request->hasParam("message")) {
-      data["message"] = request->getParam("message")->value();
+    if (request->hasParam("pumpe")) {
+      data["pumpe"] = request->getParam("pumpe")->value();
     } else {
-      data["message"] = "No message parameter";
+      data["pumpe"] = "No pumpe parameter";
     }
     String response;
     serializeJson(data, response);
@@ -105,6 +105,21 @@ void setup_routing() {
   AsyncCallbackJsonWebHandler *handler = new AsyncCallbackJsonWebHandler("/pumpe", [](AsyncWebServerRequest *request, JsonVariant &json) {
     JsonObject jsonObj = json.as<JsonObject>();
     StaticJsonDocument<200> data;
+    if (json.is<JsonArray>())
+    {
+      data = json.as<JsonArray>();
+    }
+    else if (json.is<JsonObject>())
+    {
+      data = json.as<JsonObject>();
+    }
+    String response;
+    serializeJson(data, response);
+    request->send(200, "application/json", response);
+    Serial.println(response);
+
+/*
+    //
     //serializeJsonPretty(jsonObj, Serial);
     //Serial.println();
     serializeJsonPretty(json, Serial);
@@ -120,6 +135,7 @@ void setup_routing() {
     setPumpe(pumpeState);
     
     request->send(200, "application/json", "{}");
+  */
   });
   server.addHandler(handler);
   server.onNotFound(notFound);
@@ -128,8 +144,8 @@ void setup_routing() {
 
 
 /*WIFI*/
-const char* ssid = "B600IT";
-const char* password = "Ehl95W23";
+const char* ssid = "dama";
+const char* password = "8136699728311780";
 
 const char* host = "Druck";
 
@@ -291,6 +307,7 @@ void setPumpe(bool state) {
 void printLocalTime() {
   struct tm timeinfo;
   time_t myTime;
+  return;
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time");
     sprintf(&lines[LINE1][12],"--:--:--");
