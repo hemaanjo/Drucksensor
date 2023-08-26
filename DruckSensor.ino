@@ -43,6 +43,8 @@ const char* ntpServer ="de.pool.ntp.org";
 const long  gmtOffset_sec = 0;
 const int   daylightOffset_sec = 0; //3600;
 struct tm   tmLast;
+unsigned long myRuntime=0;
+
 
 /*OTA & WEB*/
 AsyncWebServer server(80);
@@ -55,6 +57,7 @@ bool pumpeState=0;
 
 /*Rest API*/
 StaticJsonDocument<250> jsonDocument;
+char DisplayTime[10];
 char buffer[250];
 void create_json(char *tag, float value, char *unit) {  
   jsonDocument.clear();
@@ -87,7 +90,7 @@ void getPumpe() {
 void setup_routing() {
   //server.on("/pumpe", getPumpe);
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-    request->send(200, "application/json", "{\"message\":\"Welcome\"}");
+    request->send(200, "application/json", "{\"pumpe\":\"Welcome\"}");
   });
 
   server.on("/get-message", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -115,27 +118,17 @@ void setup_routing() {
     }
     String response;
     serializeJson(data, response);
+  
     request->send(200, "application/json", response);
-    Serial.println(response);
+    //Serial.println(response);
+    if(json.containsKey("pumpe")){
+      int pumpeNewValue = json["pumpe"];
+      Serial.printf("%s %s pumpe=%d\n","handler",response,pumpeNewValue);
+      setPumpe(pumpeNewValue);
+    } else {
+      Serial.printf("%s %s\n","ERRR handler",response);
+    }
 
-/*
-    //
-    //serializeJsonPretty(jsonObj, Serial);
-    //Serial.println();
-    serializeJsonPretty(json, Serial);
-    Serial.println();
-    deserializeJson(data,json);
-    int newPumpState=data["value"];
-    Serial.println("type value unit");
-//    Serial.println(data["type"]);
-//    Serial.println(data["value"]);
-//    Serial.println(data["unit"]);
-    pumpeState = newPumpState;
-    Serial.printf("PUMPE=%d\n",pumpeState);
-    setPumpe(pumpeState);
-    
-    request->send(200, "application/json", "{}");
-  */
   });
   server.addHandler(handler);
   server.onNotFound(notFound);
@@ -257,11 +250,11 @@ void lcdLine(int idx,char *out) {
 
 void setRelais() {
   if(SecondsBetweenOnOff*1000>cMillis-LastOnOff) {
-    Serial.printf("%ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
-    Serial.println("wait");
+    //Serial.printf("%ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
+    //Serial.println("wait");
     return;
   } else { 
-    Serial.printf("toogle %ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
+    //Serial.printf("toogle %ld>%ld\n",SecondsBetweenOnOff*1000,(cMillis-LastOnOff));
     LastOnOff = cMillis;
   }
   //if(getValue>ADCNull) {
@@ -304,9 +297,36 @@ void setPumpe(bool state) {
     //Serial.printf("%d\n",pumpeState);
 }
 
+void addSecond(){
+  if(tmLast.tm_sec<59){
+    tmLast.tm_sec++;
+  } else {
+    tmLast.tm_sec=0;
+    if(tmLast.tm_min<59){
+      tmLast.tm_min++;
+    } else {
+      tmLast.tm_min=0;
+      if(tmLast.tm_hour<23){
+        tmLast.tm_hour++;
+      } else {
+        tmLast.tm_hour=0;
+      }
+    }
+  }
+}
+
 void printLocalTime() {
   struct tm timeinfo;
   time_t myTime;
+  // cMillis aktuelle Laufzeit ;-)
+  if(cMillis-myRuntime>=1000) {
+      addSecond();
+      myRuntime=cMillis;
+    }
+  sprintf(&lines[LINE1][12],"%02d:%02d:%02d",tmLast.tm_hour,tmLast.tm_min,tmLast.tm_sec);
+  //Serial.printf("%ld : %s\n",myRuntime,lines[LINE1]);
+
+  sprintf(&lines[LINE1][12],DisplayTime);
   return;
   if(!getLocalTime(&timeinfo)){
     Serial.println("Failed to obtain time");
@@ -369,6 +389,9 @@ void setupNTP() {
   configTime(0,0, ntpServer);
   setenv("TZ",TIMEZONE,1);
   tzset();
+  tmLast.tm_hour=0;
+  tmLast.tm_min=0;
+  tmLast.tm_sec=0;
   printLocalTime();
 }
 
@@ -378,6 +401,9 @@ void setupLCD() {
   lcd.createChar(MINCHAR,charMIN);
   lcd.createChar(MAXCHAR,charMAX);
   lcd.createChar(DELTACHAR,charDELTA);
+
+  sprintf(DisplayTime,"--:--:--");
+
 }
 
 void setupRELAIS() {
